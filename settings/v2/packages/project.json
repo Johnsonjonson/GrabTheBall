@@ -5,5 +5,22 @@
       "width": 720,
       "height": 1280
     }
+  },
+  "physics": {
+    "collisionGroups": [
+      {
+        "index": 1,
+        "name": "CLAWS"
+      },
+      {
+        "index": 2,
+        "name": "BALL"
+      }
+    ],
+    "collisionMatrix": {
+      "0": 5,
+      "1": 4,
+      "2": 7
+    }
   }
 }
