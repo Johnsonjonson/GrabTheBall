@@ -1,4 +1,4 @@
-import { _decorator, Component, EventTouch, instantiate, Node, Prefab, Size, Sprite, SpriteFrame, tween, UITransform, Vec2, Vec3 } from 'cc';
+import { _decorator, Component, EventTouch, instantiate, Node, Prefab, RigidBody2D, RigidBodyComponent, Size, Sprite, SpriteFrame, tween, UITransform, Vec2, Vec3 } from 'cc';
 import { Ball } from './Ball';
 const { ccclass, property } = _decorator;
 
@@ -40,6 +40,7 @@ export class MainGame extends Component {
     private originalPoleHeight: number = 0;
     private updateHeight: boolean = false;
     private isOpen: boolean = true;
+    private genBallConfig: any = null;
 
     protected onLoad(): void {
         this.claws.angle = 0;
@@ -52,6 +53,7 @@ export class MainGame extends Component {
         this.ballTouchArea.on(Node.EventType.TOUCH_MOVE, this.onTouchMove, this);
         this.ballTouchArea.on(Node.EventType.TOUCH_END, this.onTouchEnd, this);
 
+        this.genBallConfig = 
         this.initBalls();
     }
 
@@ -96,7 +98,10 @@ export class MainGame extends Component {
         this.updateHeight = true;
         // 获取触摸点与爪子的角度
         this.updateAngle(location);
+        this.crabTheBalls(clawsPosition);
+    }    
 
+    crabTheBalls(clawsPosition: Vec3) {
         this.isOpen = true;
         // 爪子移动到触摸点
         tween(this.claws.position).to(2, new Vec3(clawsPosition.x, clawsPosition.y, 0),{
@@ -111,14 +116,17 @@ export class MainGame extends Component {
             this.calDisPosition = null; 
             var balls = this.getInClawsAreaBalls();
             // tween
-            this.clawsWallTop.active = true;
+            // this.clawsWallTop.active = true;
             for (let i = 0; i < balls.length; i++) {
                 var ball = balls[i];
                 var index = ball.getComponent(Ball).getBallIndex();
                 console.log('getInClawsAreaBalls index',index); 
-                // 将球放置在爪子内
-                // var clawsPosition = this.claws.getComponent(UITransform).convertToNodeSpaceAR(new Vec3(0, 0, 0));
-                // balls[i].active = false;
+                // 将球放置在爪子内 并设置为不可移动
+                var ballPosition = ball.getComponent(UITransform).convertToWorldSpaceAR(new Vec3(0, 0, 0));
+                var clawsPosition = this.claws.getComponent(UITransform).convertToNodeSpaceAR(new Vec3(ballPosition.x, ballPosition.y, 0));
+                ball.setParent(this.claws);
+                ball.setPosition(clawsPosition);
+                ball.getComponent(RigidBody2D).enabled = false;
             }
             console.log('balls',balls);
             this.claws.getComponent(Sprite).spriteFrame = this.clawsFrames[0];
@@ -137,7 +145,7 @@ export class MainGame extends Component {
                 }
             }).start();
         }).start();
-    }    
+    }
 
     getInClawsAreaBalls() {
         var balls = this.ballContainer.children;
@@ -199,35 +207,18 @@ export class MainGame extends Component {
             if (isBallInClaw(ballCenter, ballRadius, clawsAreaPolygon)) {
                 inClawsAreaBalls.push(ball);
             }
-            // var ballPosition = ball.getComponent(UITransform).convertToWorldSpaceAR(new Vec3(0, 0, 0));
-            // // ballPosition = this.clawsArea.getComponent(UITransform).convertToNodeSpaceAR(ballPosition);
-            // var clawsAreaPosition = this.clawsArea.getComponent(UITransform).convertToWorldSpaceAR(new Vec3(0, 0, 0));   
-            // var clawsAreaSize = this.clawsArea.getComponent(UITransform).contentSize;
-            // console.log('ballIndex',ball.getComponent(Ball).getBallIndex());
-            // console.log('ballPosition',ballPosition);
-            // console.log('clawsAreaPosition',clawsAreaPosition);
-            // console.log('clawsAreaSize',clawsAreaSize);
-
-            // // 如果球的80%的面积在爪子区域内，则认为球在爪子区域内
-            // if (ballPosition.x > clawsAreaPosition.x && ballPosition.x < clawsAreaPosition.x + clawsAreaSize.width &&
-            //     ballPosition.y > clawsAreaPosition.y && ballPosition.y < clawsAreaPosition.y + clawsAreaSize.height) {
-            //     var ballSize = ball.getComponent(UITransform).contentSize;
-            //     var ballArea = ballSize.width * ballSize.height;
-            //     var clawsArea = clawsAreaSize.width * clawsAreaSize.height;
-            //     if (ballArea / clawsArea > 0.8) {
-            //         inClawsAreaBalls.push(ball);
-            //     }
-            //     // inClawsAreaBalls.push(ball);
-            // }
         }
         return inClawsAreaBalls;
     }
 
     updateAngle(location: Vec2) {
         var clawsPosition = this.claws.getPosition();
+        // var destPosition =  this.claws.getComponent(UITransform).convertToNodeSpaceAR(new Vec3(location.x, location.y, 0));
         var size = this.ballTouchArea.getComponent(UITransform).contentSize;
         var deltaX = location.x - size.width / 2 - clawsPosition.x;
         var deltaY = location.y - size.height / 2 - clawsPosition.y;
+        // var deltaX = destPosition.x - clawsPosition.x;
+        // var deltaY = destPosition.y - clawsPosition.y;
         const radians = Math.atan2(deltaY, deltaX);
         const clawsAngle = radians * 180 / Math.PI - 90;
         const normalizedDegrees = clawsAngle < 0 ? clawsAngle + 360 : clawsAngle;
