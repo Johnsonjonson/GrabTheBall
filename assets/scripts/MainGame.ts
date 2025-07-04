@@ -236,7 +236,7 @@ export class MainGame extends Component {
     crabTheBalls(clawsPosition: Vec3) {
         this.isOpen = true;
         // 爪子移动到触摸点
-        tween(this.claws.position).to(2, new Vec3(clawsPosition.x, clawsPosition.y, 0),{
+        tween(this.claws.position).to(1, new Vec3(clawsPosition.x, clawsPosition.y, 0),{
             onUpdate : (target:Vec3, ratio:number)=>{                       // onUpdate 接受当前缓动的进度
                 this.claws.setPosition(target);                                // 将缓动系统计算出的结果赋予 node 的位置
                 this.updateClawPoleHeight();
@@ -263,7 +263,7 @@ export class MainGame extends Component {
             this.addBall();
             console.log('balls',balls);
             this.claws.getComponent(Sprite).spriteFrame = this.clawsFrames[0];
-            tween(this.claws.position).to(2, this.originalPosition,{
+            tween(this.claws.position).to(1, this.originalPosition,{
                 onUpdate : (target:Vec3, ratio:number)=>{                       // onUpdate 接受当前缓动的进度
                     this.claws.setPosition(target);                                // 将缓动系统计算出的结果赋予 node 的位置
                     this.updateClawPoleHeight();
