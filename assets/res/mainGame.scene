@@ -1654,7 +1654,7 @@
     "_lpos": {
       "__type__": "cc.Vec3",
       "x": 0,
-      "y": 49.5,
+      "y": 39.5,
       "z": 0
     },
     "_lrot": {
@@ -1692,7 +1692,7 @@
     "__prefab": null,
     "_contentSize": {
       "__type__": "cc.Size",
-      "width": 140,
+      "width": 100,
       "height": 1
     },
     "_anchorPoint": {
@@ -1783,7 +1783,7 @@
     },
     "_size": {
       "__type__": "cc.Size",
-      "width": 140,
+      "width": 100,
       "height": 1
     },
     "_id": "1a4+9kOThLhrePfWVgT1ye"
@@ -1816,7 +1816,7 @@
     "_lpos": {
       "__type__": "cc.Vec3",
       "x": 0,
-      "y": -49.5,
+      "y": -39.5,
       "z": 0
     },
     "_lrot": {
@@ -1854,7 +1854,7 @@
     "__prefab": null,
     "_contentSize": {
       "__type__": "cc.Size",
-      "width": 140,
+      "width": 100,
       "height": 1
     },
     "_anchorPoint": {
@@ -1945,7 +1945,7 @@
     },
     "_size": {
       "__type__": "cc.Size",
-      "width": 140,
+      "width": 100,
       "height": 1
     },
     "_id": "d2RatdTXlMXqbPWahYZTwa"
@@ -1977,7 +1977,7 @@
     "_prefab": null,
     "_lpos": {
       "__type__": "cc.Vec3",
-      "x": -69.5,
+      "x": -49.5,
       "y": 0,
       "z": 0
     },
@@ -2017,7 +2017,7 @@
     "_contentSize": {
       "__type__": "cc.Size",
       "width": 1,
-      "height": 100
+      "height": 80
     },
     "_anchorPoint": {
       "__type__": "cc.Vec2",
@@ -2108,7 +2108,7 @@
     "_size": {
       "__type__": "cc.Size",
       "width": 1,
-      "height": 100
+      "height": 80
     },
     "_id": "45T8hp3N1A85tnnD1OatgQ"
   },
@@ -2139,7 +2139,7 @@
     "_prefab": null,
     "_lpos": {
       "__type__": "cc.Vec3",
-      "x": 69.5,
+      "x": 49.5,
       "y": 0,
       "z": 0
     },
@@ -2179,7 +2179,7 @@
     "_contentSize": {
       "__type__": "cc.Size",
       "width": 1,
-      "height": 100
+      "height": 80
     },
     "_anchorPoint": {
       "__type__": "cc.Vec2",
@@ -2270,7 +2270,7 @@
     "_size": {
       "__type__": "cc.Size",
       "width": 1,
-      "height": 100
+      "height": 80
     },
     "_id": "4dpv5Itx5Ft4odJLyFp+fn"
   },
@@ -2286,8 +2286,8 @@
     "__prefab": null,
     "_contentSize": {
       "__type__": "cc.Size",
-      "width": 140,
-      "height": 100
+      "width": 100,
+      "height": 80
     },
     "_anchorPoint": {
       "__type__": "cc.Vec2",

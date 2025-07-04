@@ -385,10 +385,6 @@
     },
     "ballSpriteFrames": [
       {
-        "__uuid__": "aecb490a-53d4-446f-a5c4-216717f369fa@f9941",
-        "__expectedType__": "cc.SpriteFrame"
-      },
-      {
         "__uuid__": "4ecb7e01-5a70-46e6-b432-e7f8036d43ef@f9941",
         "__expectedType__": "cc.SpriteFrame"
       },
@@ -401,11 +397,15 @@
         "__expectedType__": "cc.SpriteFrame"
       },
       {
+        "__uuid__": "4ad73f09-60dd-492d-9b6a-f8cc76d92fe3@f9941",
+        "__expectedType__": "cc.SpriteFrame"
+      },
+      {
         "__uuid__": "f9917127-5c73-4fa1-9d54-73051bd5d6d3@f9941",
         "__expectedType__": "cc.SpriteFrame"
       },
       {
-        "__uuid__": "4ad73f09-60dd-492d-9b6a-f8cc76d92fe3@f9941",
+        "__uuid__": "aecb490a-53d4-446f-a5c4-216717f369fa@f9941",
         "__expectedType__": "cc.SpriteFrame"
       },
       {

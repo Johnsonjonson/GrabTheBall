@@ -27,28 +27,28 @@ export class GameConfig {
    public static BallGenConfig = [
     {
         type: BallType.SuperMini,
-        rate:80,
-        size:10,
+        rate:80, // 80%
+        size:50, 
     },
     {
         type: BallType.Mini,
-        rate:18,
-        size:15,
+        rate:18, // 18%
+        size:70,
     },
     {
         type: BallType.Mid,
-        rate:1.8,
-        size:30,
+        rate:1.8, // 1.8%
+        size:100,
     },
     {
         type: BallType.Big,
-        rate:0.18,
-        size:100,
+        rate:0.18, // 0.18%
+        size:180,
     },
     {
         type: BallType.SuperBig,
         rate:0.02,
-        size:150,
+        size:230,
     },
    ];
    public static BallColorConfig = [
