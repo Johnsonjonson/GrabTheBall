@@ -2,6 +2,12 @@
   "name": "GrabTheBall",
   "uuid": "1d07106b-e981-440d-8a81-e8a137ee695a",
   "creator": {
-    "version": "3.8.2"
+    "version": "3.8.2",
+    "registry": {
+      "remote": {}
+    },
+    "dependencies": {
+      "localization-editor": "1.0.1"
+    }
   }
 }
