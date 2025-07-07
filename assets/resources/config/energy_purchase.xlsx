@@ -1,0 +1,5 @@
+id,type,energyAmount,price,description
+1,ad,20,0,观看广告获得20体力
+2,paid,50,1,付费1元获得50体力
+3,paid,100,2,付费2元获得100体力
+4,paid,200,5,付费5元获得200体力 
