@@ -50,7 +50,7 @@ export class Claws extends Component {
     }
 
     public setClawLength(clawLength: number) {
-        this.clawLength = clawLength;
+        // this.clawLength = clawLength;
     }
 
     /**

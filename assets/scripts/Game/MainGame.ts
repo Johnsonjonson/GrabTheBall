@@ -1,4 +1,4 @@
-import { _decorator, Component, EventTouch, instantiate, Node, Prefab, RigidBody2D, RigidBodyComponent, size, Size, Sprite, SpriteFrame, tween, UITransform, Vec2, Vec3, Button, Director } from 'cc';
+import { _decorator, Component, EventTouch, instantiate, Node, Prefab, RigidBody2D, RigidBodyComponent, size, Size, Sprite, SpriteFrame, tween, UITransform, Vec2, Vec3, Button, Director, ProgressBar, Label } from 'cc';
 import { Ball } from './Ball';
 import { BallType, BallColor, GameConfig } from './GameConfig';
 import { BallManager } from './BallManager';
@@ -65,15 +65,28 @@ export class MainGame extends Component {
         BallManager.instance.setBallPrefab(this.ballPrefab);
         BallManager.instance.initBalls();
 
-        this.initEnergy();
+        // this.initEnergy();
         this.iniUserInfo();
     }
 
     private initEnergy() {
+        // EnergyManager.instance.setEnergyChangeCallback(this.updateEnergy.bind(this));
         // EnergyManager.instance.initEnergy();
-        var energyState = EnergyManager.instance.getEnergyState();
-        Log.i('体力状态: ' + energyState.currentEnergy + ' / ' + energyState.maxEnergy);
+        // var energyState = EnergyManager.instance.getEnergyState();
+        // Log.i('体力状态: ' + energyState.currentEnergy + ' / ' + energyState.maxEnergy);
+        // this.energyBar.progress = energyState.currentEnergy / energyState.maxEnergy;
+        // this.energyLabel.string = energyState.currentEnergy + ' / ' + energyState.maxEnergy;
+
+        // EnergyManager.instance.addEnergy(10);
+        // this.updateEnergy();
     }
+
+    // private updateEnergy() {
+    //     var energyState = EnergyManager.instance.getEnergyState();
+    //     Log.i('体力状态: ' + energyState.currentEnergy + ' / ' + energyState.maxEnergy);
+    //     this.energyBar.progress = energyState.currentEnergy / energyState.maxEnergy;
+    //     this.energyLabel.string = energyState.currentEnergy + ' / ' + energyState.maxEnergy;
+    // }
 
     private iniUserInfo() {
         var levelInfo = LevelManager.instance.getPlayerLevelInfo();
@@ -157,12 +170,12 @@ export class MainGame extends Component {
 
     crabTheBalls() {
         var amount = 1;
-        var energyInfo = EnergyManager.instance.getEnergyState();
-        if (energyInfo.currentEnergy < amount) {
+        var result = EnergyManager.instance.consumeEnergy(amount);
+        if (!result) {
             Log.i('体力不足，无法抓取');
+            this.clawsComponent.setUpdatingHeight(false);
             return;
         }
-        EnergyManager.instance.subEnergy(amount);
         this.clawsComponent.crabTheBalls(this.ballContainer);
     }
 
@@ -189,6 +202,10 @@ export class MainGame extends Component {
         //  长按自动抓取
         this.autoCrab = true;
         this.crabTheBalls();
+    }
+
+    resetEnergy() {
+        EnergyManager.instance.resetEnergyState();
     }
 
     update(deltaTime: number) {

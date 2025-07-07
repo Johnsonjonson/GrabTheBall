@@ -190,6 +190,7 @@ export class EnergyManager extends Component {
      * 处理体力不足
      */
     private handleEnergyInsufficient(): void {
+        Log.i('体力不足！');
         const recoveryPerHour = this.getCurrentRecoveryPerHour();
         const maxEnergy = this.getCurrentEnergyLimit();
 
@@ -270,13 +271,6 @@ export class EnergyManager extends Component {
         Log.i(`获得体力: ${amount}点，当前体力: ${this.energyState.currentEnergy}`);
     }
 
-    public subEnergy(amount: number): void {
-        this.energyState.currentEnergy -= amount;
-        this.saveEnergyState();
-        this.notifyEnergyChange();
-        Log.i(`消耗体力: ${amount}点，当前体力: ${this.energyState.currentEnergy}`);
-    }
-
     /**
      * 获取当前体力信息
      */
@@ -312,6 +306,19 @@ export class EnergyManager extends Component {
         const nextRecoveryTime = this.energyState.lastRecoveryTime + (1000 * 60 * 60);
         const remainingTime = Math.max(0, nextRecoveryTime - now);
         
+        if (remainingTime <= 0) {
+            // 体力值加 recoveryPerHour
+            this.energyState.currentEnergy += recoveryPerHour;
+            this.energyState.lastRecoveryTime = nextRecoveryTime;
+            this.saveEnergyState();
+            this.notifyEnergyChange();
+            // 重新开启恢复计时器
+            this.startRecoveryTimer();
+            return {
+                remainingTime: '00:00:00',
+                recoveryAmount: 0
+            };
+        }
         let recoveryAmount = recoveryPerHour;
         const neededEnergy = maxEnergy - this.energyState.currentEnergy;
         if (neededEnergy === 1 && recoveryAmount >= 5) {
@@ -330,9 +337,11 @@ export class EnergyManager extends Component {
     private formatTime(milliseconds: number): string {
         const hours = Math.floor(milliseconds / (1000 * 60 * 60));
         const minutes = Math.floor((milliseconds % (1000 * 60 * 60)) / (1000 * 60));
+        const seconds = Math.floor((milliseconds % (1000 * 60)) / 1000);
         const hoursStr = hours < 10 ? `0${hours}` : `${hours}`;
         const minutesStr = minutes < 10 ? `0${minutes}` : `${minutes}`;
-        return `${hoursStr}:${minutesStr}`;
+        const secondsStr = seconds < 10 ? `0${seconds}` : `${seconds}`;
+        return `${hoursStr}:${minutesStr}:${secondsStr}`;
     }
 
     /**
@@ -379,7 +388,7 @@ export class EnergyManager extends Component {
     public resetEnergyState(): void {
         const maxEnergy = this.getCurrentEnergyLimit();
         this.energyState = {
-            currentEnergy: 0,
+            currentEnergy: maxEnergy,
             maxEnergy: maxEnergy,
             lastRecoveryTime: Date.now()
         };

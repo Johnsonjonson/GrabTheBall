@@ -22,6 +22,10 @@ export class EnergyUI extends Component {
     @property(Label)
     private purchaseTitleLabel: Label = null;
 
+    // 体力恢复倒计时
+    @property(Label)
+    private recoveryTimeLabel: Label = null;
+
     @property(Node)
     private adButton: Node = null;
 
@@ -42,6 +46,20 @@ export class EnergyUI extends Component {
         this.updateEnergyDisplay();
         this.hideEnergyTip();
         this.hidePurchasePanel();
+    }
+
+    update(dt: number) {
+        this.updateRecoveryTime();
+    }
+
+    private updateRecoveryTime() {
+        var recoveryInfo = this.energyManager.getRecoveryInfo();
+        var remainingTime = recoveryInfo.remainingTime;
+        var recoveryAmount = recoveryInfo.recoveryAmount;
+
+        if (this.recoveryTimeLabel) {
+            this.recoveryTimeLabel.string = `${remainingTime}后恢复${recoveryAmount}体力`;
+        }
     }
 
     /**
@@ -81,16 +99,16 @@ export class EnergyUI extends Component {
             if (progressBarSprite) {
                 if (energyInfo.current > energyInfo.max) {
                     // 超出上限时显示金色
-                    progressBarSprite.color = new Color(255, 215, 0, 255);
+                    // progressBarSprite.color = new Color(255, 215, 0, 255);
                 } else if (energyInfo.percentage < 30) {
                     // 体力不足时显示红色
-                    progressBarSprite.color = new Color(255, 0, 0, 255);
+                    // progressBarSprite.color = new Color(255, 0, 0, 255);
                 } else if (energyInfo.percentage < 70) {
                     // 体力中等时显示黄色
-                    progressBarSprite.color = new Color(255, 255, 0, 255);
+                    // progressBarSprite.color = new Color(255, 255, 0, 255);
                 } else {
                     // 体力充足时显示绿色
-                    progressBarSprite.color = new Color(0, 255, 0, 255);
+                    // progressBarSprite.color = new Color(0, 255, 0, 255);
                 }
             }
         }
@@ -110,7 +128,10 @@ export class EnergyUI extends Component {
                 .to(0.5, { scale: new Vec3(1.1, 1.1, 1) })
                 .to(0.5, { scale: new Vec3(1, 1, 1) })
                 .union()
-                .repeatForever()
+                .repeat(3)
+                .call(() => {
+                    this.hideEnergyTip();
+                })
                 .start();
         }
     }
