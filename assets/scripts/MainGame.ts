@@ -1,4 +1,4 @@
-import { _decorator, Component, EventTouch, instantiate, Node, Prefab, RigidBody2D, RigidBodyComponent, Size, Sprite, SpriteFrame, tween, UITransform, Vec2, Vec3 } from 'cc';
+import { _decorator, Component, EventTouch, instantiate, Node, Prefab, RigidBody2D, RigidBodyComponent, size, Size, Sprite, SpriteFrame, tween, UITransform, Vec2, Vec3 } from 'cc';
 import { Ball } from './Ball';
 import { BallType, BallColor, GameConfig } from './GameConfig';
 const { ccclass, property } = _decorator;
@@ -42,6 +42,9 @@ export class MainGame extends Component {
     private updateHeight: boolean = false;
     private isOpen: boolean = true;
     private genBallConfig: any = null;
+    private clawLength: number = 800; // 固定爪子长度，可根据实际需求调整
+    private radians: number = 1.57;
+    private autoCrab: boolean = false;
 
     protected onLoad(): void {
         this.claws.angle = 0;
@@ -222,27 +225,24 @@ export class MainGame extends Component {
         if (this.updateHeight) {
             return;
         }
-        this.clawsWallTop.active = false;
-        this.claws.getComponent(Sprite).spriteFrame = this.clawsFrames[1];
         var location = event.getUILocation();
-        var clawsPosition = this.clawsNode.getComponent(UITransform).convertToNodeSpaceAR(new Vec3(location.x, location.y, 0));
-        console.log('clawsPosition',clawsPosition);
-        this.updateHeight = true;
-        // 获取触摸点与爪子的角度
         this.updateAngle(location);
-        this.crabTheBalls(clawsPosition);
+        this.updateHeight = true;
+        // 只用角度和长度计算末端点
+        this.crabTheBalls(this._lastClawEndPos.clone());
     }    
 
     crabTheBalls(clawsPosition: Vec3) {
+        this.clawsWallTop.active = false;
+        this.claws.getComponent(Sprite).spriteFrame = this.clawsFrames[1];
         this.isOpen = true;
-        // 爪子移动到触摸点
-        tween(this.claws.position).to(1, new Vec3(clawsPosition.x, clawsPosition.y, 0),{
-            onUpdate : (target:Vec3, ratio:number)=>{                       // onUpdate 接受当前缓动的进度
-                this.claws.setPosition(target);                                // 将缓动系统计算出的结果赋予 node 的位置
+        // 爪子移动到末端点
+        tween(this.claws.position).to(1, clawsPosition,{
+            onUpdate : (target:Vec3, ratio:number)=>{
+                this.claws.setPosition(target);
                 this.updateClawPoleHeight();
             }
         }).call(()=> {
-            // this.clawsNode.angle = 0;
             console.log('call');
             this.isOpen = false;
             this.calDisPosition = null; 
@@ -275,6 +275,9 @@ export class MainGame extends Component {
                 this.clawsPole.getComponent(UITransform).height = this.originalPoleHeight;
                 for (let i = 0; i < balls.length; i++) {
                     balls[i].active = false;
+                }
+                if (this.autoCrab) {
+                    this.onBtnCrabClick();
                 }
             }).start();
         }).start();
@@ -423,22 +426,49 @@ export class MainGame extends Component {
     }
 
     updateAngle(location: Vec2) {
-        var clawsPosition = this.claws.getPosition();
-        // var destPosition =  this.claws.getComponent(UITransform).convertToNodeSpaceAR(new Vec3(location.x, location.y, 0));
+        // 只控制角度，不再控制位置
         var size = this.ballTouchArea.getComponent(UITransform).contentSize;
-        var deltaX = location.x - size.width / 2 - clawsPosition.x;
-        var deltaY = location.y - size.height / 2 - clawsPosition.y;
-        // var deltaX = destPosition.x - clawsPosition.x;
-        // var deltaY = destPosition.y - clawsPosition.y;
+        var origin = this.originalPosition;
+        var targetX = location.x - size.width / 2;
+        var targetY = location.y - size.height / 2;
+        var deltaX = targetX - origin.x;
+        var deltaY = targetY - origin.y;
         const radians = Math.atan2(deltaY, deltaX);
-        const clawsAngle = radians * 180 / Math.PI - 90;
-        const normalizedDegrees = clawsAngle < 0 ? clawsAngle + 360 : clawsAngle;
+        this.radians = radians;
+        console.log('radians',radians);
+        this.calculateClawEndPos();
+        
+    }
 
+    calculateClawEndPos() {
+        console.log('calculateClawEndPos',this.radians);
+        var size = this.ballTouchArea.getComponent(UITransform).contentSize;
+        var origin = this.originalPosition; 
+        const clawsAngle = this.radians * 180 / Math.PI - 90;
+        const normalizedDegrees = clawsAngle < 0 ? clawsAngle + 360 : clawsAngle;
         this.clawsNode.setRotationFromEuler(new Vec3(0, 0, normalizedDegrees));
-        // this.clawsNode.angle = normalizedDegrees;
+        // 计算末端点
+        this._lastClawEndPos = new Vec3(
+            origin.x + this.clawLength * Math.cos(this.radians) - Math.cos(this.radians)* size.width,
+            origin.y + this.clawLength * Math.sin(this.radians),
+            0
+        );
+    }
+
+    onBtnCrabClick() {
+        this.calculateClawEndPos();
+        this.crabTheBalls(this._lastClawEndPos.clone());
+    }
+
+    onBtnCrabLongPress() {
+
+        //  长按自动抓取
+        this.autoCrab = true;
+        this.onBtnCrabClick();
     }
 
     updateClawPoleHeight() {
+        // 使用固定长度 clawLength 进行伸缩
         var clawsPosition = this.claws.getPosition(); 
         if (this.calDisPosition == null) {
             this.calDisPosition = clawsPosition;
@@ -446,15 +476,16 @@ export class MainGame extends Component {
         var deltaX = this.calDisPosition.x - clawsPosition.x;
         var deltaY = this.calDisPosition.y - clawsPosition.y;
         var distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
-        // console.log('distance   ',distance);
 
-        var height = this.isOpen ? distance : -distance;
+        // 使用固定长度 clawLength 而不是动态计算的距离
+        var height = this.isOpen ? distance : -distance
         var clawsPoleSize = this.clawsPole.getComponent(UITransform).contentSize;
         this.clawsPole.getComponent(UITransform).height = clawsPoleSize.height + height;
         this.calDisPosition = clawsPosition;
     }
     
     private calDisPosition: Vec3 = null;
+    private _lastClawEndPos: Vec3 = new Vec3(0, 0, 0);
     update(deltaTime: number) {
         // if (this.updateHeight) {
         //     var clawsPosition = this.claws.getPosition(); 
