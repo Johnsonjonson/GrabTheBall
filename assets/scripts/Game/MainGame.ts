@@ -5,6 +5,7 @@ import { BallManager } from './BallManager';
 import { Claws } from './Claws';
 import { EnergyManager } from './EnergyManager';
 import { LevelManager } from './LevelManager';
+import { BetManager } from './BetManager';
 import { Log } from '../Framework/Log/Logger';
 const { ccclass, property } = _decorator;
 
@@ -169,8 +170,8 @@ export class MainGame extends Component {
     }
 
     crabTheBalls() {
-        var amount = 1;
-        var result = EnergyManager.instance.consumeEnergy(amount);
+        // 使用BET系统消耗体力
+        var result = BetManager.instance.consumeEnergy();
         if (!result) {
             Log.i('体力不足，无法抓取');
             this.clawsComponent.setUpdatingHeight(false);
@@ -182,11 +183,69 @@ export class MainGame extends Component {
     onCrabBallEnd(balls: Node[]) {
         this.clawsComponent.setUpdatingHeight(false);
         
+        // 计算奖励（根据BET倍数）
+        this.calculateRewards(balls);
+        
         // 添加新球
         BallManager.instance.addBall();
         
         if (this.autoCrab) {
             this.crabTheBalls();
+        }
+    }
+
+    /**
+     * 计算奖励
+     */
+    private calculateRewards(balls: Node[]): void {
+        if (!balls || balls.length === 0) {
+            return;
+        }
+
+        let totalReward = 0;
+        let specialItems = 0;
+
+        for (const ball of balls) {
+            const ballComponent = ball.getComponent(Ball);
+            if (ballComponent) {
+                const ballType = ballComponent.getBallType();
+                const baseReward = this.getBaseReward(ballType);
+                
+                // 检查是否为特殊物品（大球和巨大球）
+                const isSpecialItem = ballType === BallType.Big || ballType === BallType.SuperBig;
+                
+                if (isSpecialItem) {
+                    specialItems++;
+                    // 特殊物品不参与倍数增加
+                    totalReward += baseReward;
+                } else {
+                    // 普通物品按BET倍数计算
+                    const reward = BetManager.instance.calculateReward(baseReward, false);
+                    totalReward += reward;
+                }
+            }
+        }
+
+        Log.i(`抓取完成 - 球数量: ${balls.length}, 特殊物品: ${specialItems}, 总奖励: ${totalReward}`);
+    }
+
+    /**
+     * 获取基础奖励
+     */
+    private getBaseReward(ballType: BallType): number {
+        switch (ballType) {
+            case BallType.SuperMini:
+                return 1;
+            case BallType.Mini:
+                return 2;
+            case BallType.Mid:
+                return 5;
+            case BallType.Big:
+                return 10;
+            case BallType.SuperBig:
+                return 20;
+            default:
+                return 1;
         }
     }
 
