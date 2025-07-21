@@ -27,11 +27,14 @@ export class HorizontalSkillUI extends Component {
     // 技能配置
     private skillConfig: any = null;
     private currentTriggerCount: number = 0;
+    private hasTriggeredThisRound: boolean = false;
 
     /**
      * 初始化技能UI
      */
     public initSkillUI(config: any): void {
+        Log.i(`初始化技能UI: ${config.name}`);
+
         this.skillConfig = config;
         this.currentTriggerCount = 0;
         
@@ -66,10 +69,22 @@ export class HorizontalSkillUI extends Component {
     }
 
     /**
-     * 增加触发次数
+     * 新一轮抓取时重置本轮触发标志
+     */
+    public resetTriggerForNewRound(): void {
+        this.hasTriggeredThisRound = false;
+    }
+
+    /**
+     * 增加触发次数（同一轮只能触发一次）
      */
     public addTriggerCount(): void {
+        if (this.hasTriggeredThisRound) {
+            Log.i(`本轮已触发过技能: ${this.skillConfig?.name}`);
+            return;
+        }
         this.currentTriggerCount++;
+        this.hasTriggeredThisRound = true;
         this.updateTriggerCount();
     }
 

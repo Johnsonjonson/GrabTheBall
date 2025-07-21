@@ -1,6 +1,7 @@
 import { _decorator, Component, Node, Vec3, tween, Tween, Sprite, Color, instantiate, Prefab, UITransform } from 'cc';
 import { GameConfig, HorizontalSkillType, SkillHeight } from './GameConfig';
 import { Log } from '../Framework/Log/Logger';
+import { HorizontalSkillUI } from './HorizontalSkillUI';
 
 const { ccclass, property } = _decorator;
 
@@ -15,6 +16,8 @@ interface HorizontalSkillInstance {
     isActive: boolean;
     node: Node;
     tween: Tween<Node>;
+    isMovingRight: boolean; // 新增：移动方向标识
+    baseSpeed: number; // 新增：基础速度
 }
 
 // 技能触发回调类型
@@ -58,6 +61,12 @@ export class HorizontalSkillManager extends Component {
 
     start() {
         this.initScreenBoundary();
+        
+        // 确保技能容器可见
+        if (this.skillContainer) {
+            this.skillContainer.active = true;
+            console.log(`技能容器: active=${this.skillContainer.active}, visible=${this.skillContainer.getComponent('cc.Sprite')?.enabled}`);
+        }
     }
 
     /**
@@ -69,7 +78,10 @@ export class HorizontalSkillManager extends Component {
             if (transform) {
                 this.screenLeftBound = -transform.width / 2;
                 this.screenRightBound = transform.width / 2;
+                console.log(`屏幕边界初始化: [${this.screenLeftBound}, ${this.screenRightBound}], 宽度: ${transform.width}`);
             }
+        } else {
+            console.warn('screenBoundary 节点未设置，使用默认边界');
         }
     }
 
@@ -169,13 +181,21 @@ export class HorizontalSkillManager extends Component {
 
         // 创建技能节点
         const skillNode = instantiate(this.skillPrefab);
+        const size = skillNode.getComponent(UITransform).contentSize;
+        Log.i(`技能节点大小: ${size.width}, ${size.height}`);
         skillNode.setParent(this.skillContainer);
 
-        // 设置初始位置
+        // 确保节点可见
+        skillNode.active = true;
+
+        // 设置初始位置 - 先在屏幕内可见
         const heightConfig = GameConfig.SkillHeightConfig.find(h => h.height === height);
-        const startX = this.screenLeftBound - 100; // 从屏幕左侧外开始
+        const startX = this.screenLeftBound - size.width / 2 + 50; // 从屏幕左侧内开始，确保可见
         const y = heightConfig ? heightConfig.yPosition : 0;
         skillNode.setPosition(new Vec3(startX, y, 0));
+        
+        console.log(`生成技能: ${skillConfig.name}, 位置: (${startX}, ${y}), 屏幕边界: [${this.screenLeftBound}, ${this.screenRightBound}]`);
+        console.log(`技能节点: active=${skillNode.active}, visible=${skillNode.getComponent('cc.Sprite')?.enabled}`);
 
         // 创建技能实例
         const skillInstance: HorizontalSkillInstance = {
@@ -187,8 +207,16 @@ export class HorizontalSkillManager extends Component {
             maxTriggers: skillConfig.maxTriggers,
             isActive: true,
             node: skillNode,
-            tween: null
+            tween: null,
+            isMovingRight: true, // 初始向右移动
+            baseSpeed: skillConfig.slideSpeed // 基础速度
         };
+
+        // 初始化UI组件
+        const skillUI = skillNode.getComponent(HorizontalSkillUI);
+        if (skillUI) {
+            skillUI.initSkillUI(skillConfig);
+        }
 
         // 播放生成动画
         this.playGenerateAnimation(skillInstance);
@@ -204,6 +232,7 @@ export class HorizontalSkillManager extends Component {
      */
     private playGenerateAnimation(skillInstance: HorizontalSkillInstance): void {
         const node = skillInstance.node;
+        const size = node.getComponent(UITransform).contentSize;
         const duration = skillInstance.skillConfig.duration;
 
         // 缩放动画
@@ -211,8 +240,20 @@ export class HorizontalSkillManager extends Component {
         tween(node)
             .to(duration, { scale: new Vec3(1, 1, 1) })
             .call(() => {
-                // 开始滑动
-                this.startSliding(skillInstance);
+                // 生成动画完成后，确保技能在屏幕内可见，然后开始滑动
+                const currentPos = node.getPosition();
+                console.log(`生成动画完成，当前位置: (${currentPos.x}, ${currentPos.y})`);
+                
+                // 确保技能在屏幕内可见
+                if (currentPos.x < this.screenLeftBound) {
+                    node.setPosition(new Vec3(this.screenLeftBound - size.width / 2 + 50, currentPos.y, 0));
+                    console.log(`调整位置到屏幕内: (${this.screenLeftBound - size.width / 2 + 50}, ${currentPos.y})`);
+                }
+                
+                // 延迟一秒后开始滑动，让用户能看到技能
+                this.scheduleOnce(() => {
+                    this.startSliding(skillInstance);
+                }, 1.0);
             })
             .start();
     }
@@ -222,16 +263,36 @@ export class HorizontalSkillManager extends Component {
      */
     private startSliding(skillInstance: HorizontalSkillInstance): void {
         const node = skillInstance.node;
-        const speed = skillInstance.skillConfig.slideSpeed;
-        const distance = this.screenRightBound - this.screenLeftBound + 200; // 滑动距离
-        const duration = distance / speed;
+        const size = node.getComponent(UITransform).contentSize;
+        const currentPos = node.getPosition();
+        
+        // 确定移动方向和目标位置
+        let targetX: number;
+        if (skillInstance.isMovingRight) {
+            targetX = this.screenRightBound - size.width / 2 + 50;
+        } else {
+            targetX = this.screenLeftBound + size.width / 2 - 50;
+        }
+        
+        // 计算当前位置到屏幕中心的距离比例，用于速度调整
+        const screenCenter = (this.screenLeftBound + this.screenRightBound) / 2;
+        const distanceFromCenter = Math.abs(currentPos.x - screenCenter);
+        const maxDistance = (this.screenRightBound - this.screenLeftBound) / 2;
+        const speedMultiplier = 0.3 + 0.7 * (distanceFromCenter / maxDistance); // 中间0.3倍速，边缘1倍速
+        
+        const adjustedSpeed = skillInstance.baseSpeed * speedMultiplier;
+        const distance = Math.abs(targetX - currentPos.x);
+        const duration = distance / adjustedSpeed;
 
+        console.log('startSliding  duration', duration);
         // 创建滑动动画
         skillInstance.tween = tween(node)
-            .to(duration, { position: new Vec3(this.screenRightBound + 100, node.position.y, 0) })
+            .to(duration, { position: new Vec3(targetX, currentPos.y, 0) })
             .call(() => {
-                // 滑动结束，移除技能
-                this.removeSkill(skillInstance.height);
+                // 到达边界后，改变方向继续移动
+                skillInstance.isMovingRight = !skillInstance.isMovingRight;
+                console.log('startSliding  isMovingRight', skillInstance.isMovingRight);
+                this.startSliding(skillInstance);
             })
             .start();
     }
@@ -289,6 +350,12 @@ export class HorizontalSkillManager extends Component {
             skillInstance.tween.stop();
         }
 
+        // 更新UI显示
+        const skillUI = skillInstance.node.getComponent(HorizontalSkillUI);
+        if (skillUI) {
+            skillUI.addTriggerCount();
+        }
+
         // 播放触发效果
         this.playTriggerEffect(skillInstance);
 
@@ -302,9 +369,10 @@ export class HorizontalSkillManager extends Component {
 
         // 检查是否达到最大触发次数
         if (skillInstance.triggerCount >= skillInstance.maxTriggers) {
-            this.playDisappearAnimation(skillInstance);
+            // 触发次数用完，播放消失动画并移除技能
+            // this.playDisappearAnimation(skillInstance);
         } else {
-            // 继续滑动
+            // 触发次数未用完，继续滑动
             this.startSliding(skillInstance);
         }
     }
@@ -377,6 +445,59 @@ export class HorizontalSkillManager extends Component {
     }
 
     /**
+     * 调试方法：强制显示技能
+     */
+    public debugShowSkill(): void {
+        console.log('=== 调试技能显示 ===');
+        console.log('技能容器:', this.skillContainer?.name, 'active:', this.skillContainer?.active);
+        console.log('技能预制体:', this.skillPrefab ? '已设置' : '未设置');
+        console.log('屏幕边界:', `[${this.screenLeftBound}, ${this.screenRightBound}]`);
+        console.log('当前技能数量:', this.activeSkills.size);
+        
+        for (const [height, skillInstance] of this.activeSkills) {
+            console.log(`技能 ${height}:`, {
+                name: skillInstance.skillConfig.name,
+                node: skillInstance.node?.name,
+                active: skillInstance.node?.active,
+                position: skillInstance.node?.getPosition(),
+                scale: skillInstance.node?.getScale()
+            });
+        }
+    }
+
+    /**
+     * 调试方法：在屏幕中央生成技能
+     */
+    public debugGenerateSkillInCenter(): void {
+        console.log('=== 在屏幕中央生成技能 ===');
+        
+        if (!this.skillPrefab || !this.skillContainer) {
+            console.error('技能预制体或容器未设置');
+            return;
+        }
+
+        // 创建技能节点
+        const skillNode = instantiate(this.skillPrefab);
+        skillNode.setParent(this.skillContainer);
+        skillNode.active = true;
+
+        // 设置在屏幕中央
+        const centerX = (this.screenLeftBound + this.screenRightBound) / 2;
+        const centerY = 0;
+        skillNode.setPosition(new Vec3(centerX, centerY, 0));
+        skillNode.setScale(new Vec3(1, 1, 1)); // 确保缩放为1
+
+        console.log(`在屏幕中央生成技能: 位置(${centerX}, ${centerY})`);
+        console.log(`技能节点: active=${skillNode.active}, scale=${skillNode.getScale()}`);
+        
+        // 5秒后销毁
+        this.scheduleOnce(() => {
+            skillNode.destroy();
+            console.log('调试技能已销毁');
+        }, 5.0);
+    }
+
+    /**
      * 获取当前激活的技能数量
      */
     public getActiveSkillCount(): number {
@@ -407,7 +528,9 @@ export class HorizontalSkillManager extends Component {
                     x: skillInstance.position.x,
                     y: skillInstance.position.y,
                     z: skillInstance.position.z
-                }
+                },
+                isMovingRight: skillInstance.isMovingRight,
+                baseSpeed: skillInstance.baseSpeed
             });
         }
 
@@ -427,12 +550,35 @@ export class HorizontalSkillManager extends Component {
                     // 重新生成技能
                     this.generateSkill(skillConfig, skillData.height);
                     
-                    // 恢复触发次数
+                    // 恢复技能状态
                     const skillInstance = this.activeSkills.get(skillData.height);
                     if (skillInstance) {
                         skillInstance.triggerCount = skillData.triggerCount;
                         skillInstance.position = new Vec3(skillData.position.x, skillData.position.y, skillData.position.z);
+                        skillInstance.isMovingRight = skillData.isMovingRight !== undefined ? skillData.isMovingRight : true;
+                        skillInstance.baseSpeed = skillData.baseSpeed !== undefined ? skillData.baseSpeed : skillConfig.slideSpeed;
+                        
+                        // 如果技能还在激活状态且未达到最大触发次数，继续移动
+                        if (skillInstance.triggerCount < skillInstance.maxTriggers) {
+                            skillInstance.node.setPosition(skillInstance.position);
+                            this.startSliding(skillInstance);
+                        }
                     }
+                }
+            }
+        }
+    }
+
+    /**
+     * 一轮抓取结束后，重置所有技能的触发标志，并隐藏已达上限的技能
+     */
+    public resetAndCheckSkillsForNewRound(): void {
+        for (const [height, skillInstance] of this.activeSkills) {
+            const skillUI = skillInstance.node.getComponent(HorizontalSkillUI);
+            if (skillUI) {
+                skillUI.resetTriggerForNewRound();
+                if (skillUI.isMaxTriggered()) {
+                    skillUI.playDisappearAnimation();
                 }
             }
         }

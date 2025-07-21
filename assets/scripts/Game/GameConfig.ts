@@ -165,7 +165,7 @@ export class GameConfig {
    public static SkillHeightConfig = [
     {
         height: SkillHeight.Low,
-        yPosition: -200, // Y轴位置
+        yPosition: -50, // Y轴位置
         name: "低"
     },
     {
@@ -175,7 +175,7 @@ export class GameConfig {
     },
     {
         height: SkillHeight.High,
-        yPosition: 200,
+        yPosition: 50,
         name: "高"
     }
    ];

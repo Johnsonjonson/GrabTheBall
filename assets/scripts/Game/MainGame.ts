@@ -74,6 +74,10 @@ export class MainGame extends Component {
         // 初始化横版技能系统
         this.initHorizontalSkillSystem();
 
+        console.log('尝试生成技能，HorizontalSkillManager.instance:', HorizontalSkillManager.instance);
+        const success = HorizontalSkillManager.instance.tryGenerateSkill(100);
+        console.log('技能生成结果:', success);
+
         // this.initEnergy();
         this.iniUserInfo();
     }
@@ -203,6 +207,9 @@ export class MainGame extends Component {
         if (this.autoCrab) {
             this.crabTheBalls();
         }
+
+        // 一轮抓取结束后，重置所有技能的触发标志，并隐藏已达上限的技能
+        HorizontalSkillManager.instance.resetAndCheckSkillsForNewRound();
     }
 
     /**
@@ -320,6 +327,7 @@ export class MainGame extends Component {
         skillManager.setSkillTriggerCallback(this.onSkillTriggered.bind(this));
 
         Log.i('横版技能系统初始化完成');
+        console.log('横版技能系统初始化完成，skillManagerNode:', this.skillManagerNode.name);
     }
 
     /**

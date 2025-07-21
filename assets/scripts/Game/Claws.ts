@@ -242,7 +242,7 @@ export class Claws extends Component {
      * 判断小球是否在爪内
      */
     private isSmallBallInClaw(ballCenter: Vec2, ballRadius: number, clawPolygon: Vec2[]): boolean {
-        console.log('isSmallBallInClaw', ballCenter, ballRadius, clawPolygon);
+        // console.log('isSmallBallInClaw', ballCenter, ballRadius, clawPolygon);
         const totalSamples = 1000; // 总采样点数
         let insideCount = 0;
     
