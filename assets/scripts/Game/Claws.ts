@@ -1,6 +1,7 @@
 import { _decorator, Component, Node, Sprite, SpriteFrame, tween, UITransform, Vec2, Vec3, Size, RigidBody2D } from 'cc';
 import { Ball } from './Ball';
 import { BallType } from './GameConfig';
+import { HorizontalSkillManager } from './HorizontalSkillManager';
 const { ccclass, property } = _decorator;
 
 @ccclass('Claws')
@@ -114,6 +115,9 @@ export class Claws extends Component {
             onUpdate: (target: Vec3, ratio: number) => {
                 this.node.setPosition(target);
                 this.updateClawPoleHeight();
+                
+                // 检查技能触发
+                this.checkSkillTrigger();
             }
         }).call(() => {
             console.log('call');
@@ -350,6 +354,20 @@ export class Claws extends Component {
      */
     public setUpdatingHeight(value: boolean) {
         this.updateHeight = value;
+    }
+
+    /**
+     * 检查技能触发
+     */
+    private checkSkillTrigger(): void {
+        if (!HorizontalSkillManager.instance) return;
+
+        // 获取爪子位置和大小
+        const clawPosition = this.node.getPosition();
+        const clawSize = this.clawsArea.getComponent(UITransform).contentSize;
+
+        // 检查技能触发
+        HorizontalSkillManager.instance.checkSkillTrigger(clawPosition, clawSize);
     }
 }
 

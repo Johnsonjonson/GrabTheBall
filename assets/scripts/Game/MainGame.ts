@@ -1,11 +1,12 @@
 import { _decorator, Component, EventTouch, instantiate, Node, Prefab, RigidBody2D, RigidBodyComponent, size, Size, Sprite, SpriteFrame, tween, UITransform, Vec2, Vec3, Button, Director, ProgressBar, Label } from 'cc';
 import { Ball } from './Ball';
-import { BallType, BallColor, GameConfig } from './GameConfig';
+import { BallType, BallColor, GameConfig, HorizontalSkillType } from './GameConfig';
 import { BallManager } from './BallManager';
 import { Claws } from './Claws';
 import { EnergyManager } from './EnergyManager';
 import { LevelManager } from './LevelManager';
 import { BetManager } from './BetManager';
+import { HorizontalSkillManager, SkillTriggerCallback } from './HorizontalSkillManager';
 import { Log } from '../Framework/Log/Logger';
 const { ccclass, property } = _decorator;
 
@@ -23,6 +24,10 @@ export class MainGame extends Component {
 
     @property(Prefab)
     private ballPrefab: Prefab = null;
+
+    // 横版技能相关
+    @property(Node)
+    private skillManagerNode: Node = null;
 
     // 长按相关属性
     @property(Button)
@@ -65,6 +70,9 @@ export class MainGame extends Component {
         BallManager.instance.setBallContainer(this.ballContainer);
         BallManager.instance.setBallPrefab(this.ballPrefab);
         BallManager.instance.initBalls();
+
+        // 初始化横版技能系统
+        this.initHorizontalSkillSystem();
 
         // this.initEnergy();
         this.iniUserInfo();
@@ -183,6 +191,9 @@ export class MainGame extends Component {
     onCrabBallEnd(balls: Node[]) {
         this.clawsComponent.setUpdatingHeight(false);
         
+        // 检查是否有问号球，尝试生成横版技能
+        this.checkQuestionBallForSkill(balls);
+        
         // 计算奖励（根据BET倍数）
         this.calculateRewards(balls);
         
@@ -288,6 +299,148 @@ export class MainGame extends Component {
             this.crabButton.node.off(Node.EventType.TOUCH_END, this.onButtonTouchEnd, this);
             this.crabButton.node.off(Node.EventType.TOUCH_CANCEL, this.onButtonTouchEnd, this);
         }
+    }
+
+    /**
+     * 初始化横版技能系统
+     */
+    private initHorizontalSkillSystem(): void {
+        if (!this.skillManagerNode) {
+            Log.w('技能管理器节点未设置');
+            return;
+        }
+
+        const skillManager = this.skillManagerNode.getComponent(HorizontalSkillManager);
+        if (!skillManager) {
+            Log.e('未找到HorizontalSkillManager组件');
+            return;
+        }
+
+        // 设置技能触发回调
+        skillManager.setSkillTriggerCallback(this.onSkillTriggered.bind(this));
+
+        Log.i('横版技能系统初始化完成');
+    }
+
+    /**
+     * 检查问号球并尝试生成技能
+     */
+    private checkQuestionBallForSkill(balls: Node[]): void {
+        if (!HorizontalSkillManager.instance) return;
+
+        // 检查是否有问号球（这里需要根据实际的问号球类型来判断）
+        let hasQuestionBall = false;
+        for (const ball of balls) {
+            const ballComponent = ball.getComponent(Ball);
+            if (ballComponent) {
+                // 这里需要根据实际的问号球标识来判断
+                // 例如：if (ballComponent.getBallType() === BallType.Question) {
+                //     hasQuestionBall = true;
+                //     break;
+                // }
+            }
+        }
+
+        // 如果有问号球，尝试生成横版技能
+        if (hasQuestionBall) {
+            const success = HorizontalSkillManager.instance.tryGenerateSkill();
+            if (success) {
+                Log.i('成功生成横版技能');
+            }
+        }
+    }
+
+    /**
+     * 技能触发回调
+     */
+    private onSkillTriggered: SkillTriggerCallback = (skillId: number, skillType: HorizontalSkillType, bonusValue?: number) => {
+        Log.i(`技能触发: ID=${skillId}, 类型=${skillType}, 倍数=${bonusValue || 1}`);
+
+        if (skillType === HorizontalSkillType.Morph) {
+            this.handleMorphSkill(skillId);
+        } else if (skillType === HorizontalSkillType.Settlement) {
+            this.handleSettlementSkill(skillId, bonusValue || 1.0);
+        }
+    };
+
+    /**
+     * 处理形态变更技能
+     */
+    private handleMorphSkill(skillId: number): void {
+        switch (skillId) {
+            case 1: // 双倍爪子
+                this.applyDoubleClawEffect();
+                break;
+            case 2: // 磁力爪子
+                this.applyMagneticClawEffect();
+                break;
+            case 5: // 超级爪子
+                this.applySuperClawEffect();
+                break;
+            default:
+                Log.w(`未知的形态变更技能: ${skillId}`);
+        }
+    }
+
+    /**
+     * 处理结算技能
+     */
+    private handleSettlementSkill(skillId: number, bonusValue: number): void {
+        switch (skillId) {
+            case 3: // 金币加成
+                this.applyCoinBonus(bonusValue);
+                break;
+            case 4: // 经验加成
+                this.applyExpBonus(bonusValue);
+                break;
+            default:
+                Log.w(`未知的结算技能: ${skillId}`);
+        }
+    }
+
+    /**
+     * 应用双倍爪子效果
+     */
+    private applyDoubleClawEffect(): void {
+        // 这里实现双倍爪子的逻辑
+        Log.i('应用双倍爪子效果');
+        // 可以修改爪子的碰撞检测范围或视觉效果
+    }
+
+    /**
+     * 应用磁力爪子效果
+     */
+    private applyMagneticClawEffect(): void {
+        // 这里实现磁力爪子的逻辑
+        Log.i('应用磁力爪子效果');
+        // 可以修改球的吸引逻辑
+    }
+
+    /**
+     * 应用超级爪子效果
+     */
+    private applySuperClawEffect(): void {
+        // 这里实现超级爪子的逻辑
+        Log.i('应用超级爪子效果');
+        // 可以修改爪子的抓取能力
+    }
+
+    /**
+     * 应用金币加成
+     */
+    private applyCoinBonus(bonusValue: number): void {
+        // 这里实现金币加成的逻辑
+        Log.i(`应用金币加成: x${bonusValue}`);
+        // 可以在计算奖励时应用倍数
+    }
+
+    /**
+     * 应用经验加成
+     */
+    private applyExpBonus(bonusValue: number): void {
+        // 这里实现经验加成的逻辑
+        Log.i(`应用经验加成: x${bonusValue}`);
+        // 可以在计算经验时应用倍数
     }
 }
 
