@@ -128,7 +128,7 @@ export class GameConfig {
         triggerRate: 8, // 8%触发概率
         allowedHeights: [SkillHeight.Low, SkillHeight.Mid],
         slideSpeed: 120,
-        maxTriggers: 1,
+        maxTriggers: 3,
         duration: 1.0,
         effectDuration: 0.5,
         bonusValue: 2.0, // 金币倍数
@@ -141,7 +141,7 @@ export class GameConfig {
         triggerRate: 6, // 6%触发概率
         allowedHeights: [SkillHeight.Mid, SkillHeight.High],
         slideSpeed: 90,
-        maxTriggers: 1,
+        maxTriggers: 3,
         duration: 1.0,
         effectDuration: 0.5,
         bonusValue: 1.5, // 经验倍数

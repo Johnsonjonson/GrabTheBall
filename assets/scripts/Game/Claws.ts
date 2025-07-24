@@ -363,7 +363,7 @@ export class Claws extends Component {
         if (!HorizontalSkillManager.instance) return;
 
         // 获取爪子位置和大小
-        const clawPosition = this.node.getPosition();
+        const clawPosition = this.clawsArea.getComponent(UITransform).convertToWorldSpaceAR(new Vec3(0, 0, 0));
         const clawSize = this.clawsArea.getComponent(UITransform).contentSize;
 
         // 检查技能触发

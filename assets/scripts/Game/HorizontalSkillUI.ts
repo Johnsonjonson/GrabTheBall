@@ -27,7 +27,7 @@ export class HorizontalSkillUI extends Component {
     // 技能配置
     private skillConfig: any = null;
     private currentTriggerCount: number = 0;
-    private hasTriggeredThisRound: boolean = false;
+    public hasTriggeredThisRound: boolean = false;
 
     /**
      * 初始化技能UI

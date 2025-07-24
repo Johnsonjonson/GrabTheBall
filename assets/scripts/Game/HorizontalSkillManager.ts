@@ -305,11 +305,15 @@ export class HorizontalSkillManager extends Component {
     public checkSkillTrigger(clawPosition: Vec3, clawSize: { width: number, height: number }): void {
         for (const [height, skillInstance] of this.activeSkills) {
             if (!skillInstance.isActive) continue;
-
+            if(!skillInstance.node.isValid) continue;
             const skillNode = skillInstance.node;
-            const skillPos = skillNode.getPosition();
+            const skillPos = skillNode.getComponent(UITransform).convertToWorldSpaceAR(new Vec3(0, 0, 0));
+            
             const skillSize = skillNode.getComponent(UITransform)?.contentSize || { width: 100, height: 50 };
-
+            // console.log('checkSkillTrigger  skillPos', skillPos);
+            // console.log('checkSkillTrigger  skillSize', skillSize);
+            // console.log('checkSkillTrigger  clawPosition', clawPosition);
+            // console.log('checkSkillTrigger  clawSize', clawSize);
             // 检查碰撞
             if (this.isColliding(clawPosition, clawSize, skillPos, skillSize)) {
                 this.triggerSkill(skillInstance);
@@ -331,27 +335,32 @@ export class HorizontalSkillManager extends Component {
         const right2 = pos2.x + size2.width / 2;
         const top2 = pos2.y + size2.height / 2;
         const bottom2 = pos2.y - size2.height / 2;
-
-        return !(left1 > right2 || right1 < left2 || top1 < bottom2 || bottom1 > top2);
+        const isColliding = !(left1 > right2 || right1 < left2 || top1 < bottom2 || bottom1 > top2);
+        console.log('isColliding', isColliding);
+        return isColliding;
     }
 
     /**
      * 触发技能
      */
     private triggerSkill(skillInstance: HorizontalSkillInstance): void {
+        console.log('triggerSkill', skillInstance.triggerCount, skillInstance.maxTriggers);
         if (skillInstance.triggerCount >= skillInstance.maxTriggers) {
+            return;
+        }
+        
+        // 更新UI显示
+        const skillUI = skillInstance.node.getComponent(HorizontalSkillUI);
+        if (skillUI.hasTriggeredThisRound) {
             return;
         }
 
         skillInstance.triggerCount++;
         
         // 停止滑动
-        if (skillInstance.tween) {
-            skillInstance.tween.stop();
-        }
-
-        // 更新UI显示
-        const skillUI = skillInstance.node.getComponent(HorizontalSkillUI);
+        // if (skillInstance.tween) {
+        //     skillInstance.tween.stop();
+        // }
         if (skillUI) {
             skillUI.addTriggerCount();
         }
@@ -368,13 +377,13 @@ export class HorizontalSkillManager extends Component {
         Log.i(`触发技能: ${skillInstance.skillConfig.name} (${skillInstance.triggerCount}/${skillInstance.maxTriggers})`);
 
         // 检查是否达到最大触发次数
-        if (skillInstance.triggerCount >= skillInstance.maxTriggers) {
-            // 触发次数用完，播放消失动画并移除技能
-            // this.playDisappearAnimation(skillInstance);
-        } else {
-            // 触发次数未用完，继续滑动
-            this.startSliding(skillInstance);
-        }
+        // if (skillInstance.triggerCount >= skillInstance.maxTriggers) {
+        //     // 触发次数用完，播放消失动画并移除技能
+        //     // this.playDisappearAnimation(skillInstance);
+        // } else {
+        //     // 触发次数未用完，继续滑动
+        //     this.startSliding(skillInstance);
+        // }
     }
 
     /**
@@ -573,7 +582,9 @@ export class HorizontalSkillManager extends Component {
      * 一轮抓取结束后，重置所有技能的触发标志，并隐藏已达上限的技能
      */
     public resetAndCheckSkillsForNewRound(): void {
+        console.log('resetAndCheckSkillsForNewRound', this.activeSkills.size);
         for (const [height, skillInstance] of this.activeSkills) {
+            if(!skillInstance.node.isValid) continue;
             const skillUI = skillInstance.node.getComponent(HorizontalSkillUI);
             if (skillUI) {
                 skillUI.resetTriggerForNewRound();
