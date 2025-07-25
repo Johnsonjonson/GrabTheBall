@@ -1,4 +1,4 @@
-import { _decorator, Component, Node, Sprite, SpriteFrame, tween, UITransform, Vec2, Vec3, Size, RigidBody2D } from 'cc';
+import { _decorator, Component, Node, Sprite, SpriteFrame, tween, UITransform, Vec2, Vec3, Size, RigidBody2D, director, view, screen, Line, Color, Graphics } from 'cc';
 import { Ball } from './Ball';
 import { BallType } from './GameConfig';
 import { HorizontalSkillManager } from './HorizontalSkillManager';
@@ -21,6 +21,8 @@ export class Claws extends Component {
 
     @property(SpriteFrame)
     private clawsFrames: SpriteFrame[] = [];
+    @property(Node)
+    private lineNode: Node = null;
 
     // 爪子配置
     private originalPosition: Vec3 = new Vec3(0, 0, 0);
@@ -61,6 +63,7 @@ export class Claws extends Component {
      */
     public updateAngle(location: Vec2, touchAreaSize: Size) {
         var origin = this.originalPosition;
+        // var origin = this.clawsNode.getComponent(UITransform).convertToWorldSpaceAR(new Vec3(0, 0, 0));
         var targetX = location.x - touchAreaSize.width / 2;
         var targetY = location.y - touchAreaSize.height / 2;
         var deltaX = targetX - origin.x;
@@ -76,18 +79,44 @@ export class Claws extends Component {
      * @param touchAreaSize 触摸区域大小
      */
     public calculateClawEndPos(touchAreaSize: Size) {
-        console.log('calculateClawEndPos', this.radians);
+        console.log('calculateClawEndPos', this.radians,touchAreaSize);
         var clawsSize = this.node.getComponent(UITransform).contentSize;
+
         var origin = this.originalPosition; 
         const clawsAngle = this.radians * 180 / Math.PI - 90;
         const normalizedDegrees = clawsAngle < 0 ? clawsAngle + 360 : clawsAngle;
         this.clawsNode.setRotationFromEuler(new Vec3(0, 0, normalizedDegrees));
+        // director.
+        // 获取屏幕宽度
+        let visibleSize = view.getVisibleSize()
+        let windowSize =  screen.windowSize;
+        console.log('visibleSize', visibleSize,windowSize);
+
+        // let visibleSize = view.getVisibleSize()
+        const visibleRatio = visibleSize.x/visibleSize.y
+        // let windowSize = screen.windowSize;
+        let winRatio = windowSize.width / windowSize.height;
+        let size = new Size(0,0);
+        if (visibleRatio > winRatio) {
+            size = new Size(visibleSize.width, visibleSize.height*visibleRatio/winRatio)
+        } else {
+            size = new Size(visibleSize.width*(winRatio/visibleRatio), visibleSize.height)
+        }
+        console.log('calculateClawEndPos  size', size);
+
         // 计算末端点
         this._lastClawEndPos = new Vec3(
-            origin.x + this.clawLength * Math.cos(this.radians) - Math.cos(this.radians) * (touchAreaSize.width+ clawsSize.width),
+            origin.x + this.clawLength * Math.cos(this.radians) - Math.cos(this.radians) * size.width/2,
             origin.y + this.clawLength * Math.sin(this.radians),
             0
         );
+         // 用graphics画一条线
+         var graphics = this.lineNode.getComponent(Graphics);
+         graphics.clear();
+         graphics.fillColor = new Color(255, 0, 0, 255);
+         graphics.moveTo(this.originalPosition.x, this.originalPosition.y);
+         graphics.lineTo(this._lastClawEndPos.x, this._lastClawEndPos.y);
+         graphics.stroke();
     }
 
     /**
